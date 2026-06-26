@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreTagsRequest;
+use App\Models\Tag;
 use Illuminate\Http\Request;
 
 class TagController extends Controller
@@ -11,7 +13,8 @@ class TagController extends Controller
      */
     public function index()
     {
-        //
+        $tags = Tag::all();
+        return view('tags.index', compact('tags'));
     }
 
     /**
@@ -19,15 +22,19 @@ class TagController extends Controller
      */
     public function create()
     {
-        //
+        $tags = Tag::all();
+        return view('tags.create', compact('tags'));
     }
 
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(StoreTagsRequest $request)
     {
-        //
+        $validated = $request->validated();
+        Tag::create($validated);
+
+        return redirect()->route('tags.index');
     }
 
     /**
@@ -59,6 +66,8 @@ class TagController extends Controller
      */
     public function destroy(string $id)
     {
-        //
+        $tag = Tag::findOrFail($id);
+        $tag->delete();
+        return redirect()->route('tags.index');
     }
 }
