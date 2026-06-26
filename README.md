@@ -46,6 +46,9 @@ This task features its basic requirements and bonus features that were mentioned
    php artisan migrate --seed
    ```
 
+**Note**: The database seeding process creates dummy data for testing purposes. It is recommended to register a new user account via the application's registration page to access and test features properly.
+
+
 ## Development
 
 To start the local development server:
