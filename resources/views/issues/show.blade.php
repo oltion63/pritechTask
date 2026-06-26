@@ -77,7 +77,6 @@
                             <select id="tag-selector" onchange="attachTag(this)" class="text-xs rounded-lg border-gray-300 bg-white py-1 pl-2 pr-8 focus:ring-indigo-500 focus:border-indigo-500">
                                 <option value="" selected disabled>+ Add Tag</option>
                                 @foreach($allTags as $tag)
-                                    <!-- Hide if already attached to avoid duplicates -->
                                     <option id="tag-option-{{ $tag->id }}" value="{{ $tag->id }}" data-color="{{ $tag->color }}" class="{{ $issue->tags->contains($tag->id) ? 'hidden' : '' }}">
                                         {{ $tag->name }}
                                     </option>
@@ -102,11 +101,13 @@
                         <div>
                             <input type="text" id="author_name" name="author_name" placeholder="Your Name" required
                                    class="w-full rounded-xl border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                            <p id="error-author_name" class="text-xs text-red-600 mt-1 hidden"></p>
                         </div>
                     </div>
                     <div>
                         <textarea id="comment_body" name="body" rows="3" placeholder="Write a comment..." required
                                   class="w-full rounded-xl border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500"></textarea>
+                        <p id="error-body" class="text-xs text-red-600 mt-1 hidden"></p>
                     </div>
                     <div class="flex justify-end">
                         <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-medium hover:bg-indigo-700 transition-colors shadow-xs">
@@ -118,6 +119,12 @@
                 <div id="comments-wrapper" class="space-y-4">
                     <p class="text-sm text-center text-gray-400 py-4">Loading comments...</p>
                 </div>
+
+                <div class="mt-6 text-center">
+                    <button id="load-more-btn" onclick="loadComments()" class="hidden px-4 py-2 text-xs font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-xl transition-colors">
+                        Load Older Comments
+                    </button>
+                </div>
             </div>
 
         </div>
@@ -127,6 +134,113 @@
 <script>
     const issueId = "{{ $issue->id }}";
     const csrfToken = document.querySelector('input[name="_token"]').value;
+    let nextCommentPageUrl = `/issues/${issueId}/comments`;
+
+    document.addEventListener("DOMContentLoaded", () => {
+        loadComments();
+    });
+
+
+    function loadComments() {
+        if (!nextCommentPageUrl) return;
+
+        fetch(nextCommentPageUrl, {
+            headers: { 'Accept': 'application/json' }
+        })
+            .then(res => res.json())
+            .then(data => {
+                const wrapper = document.getElementById('comments-wrapper');
+
+                if (nextCommentPageUrl === `/issues/${issueId}/comments`) {
+                    wrapper.innerHTML = '';
+                }
+
+                if (data.data.length === 0 && wrapper.children.length === 0) {
+                    wrapper.innerHTML = `<p id="no-comments-message" class="text-sm text-center text-gray-400 py-4">No comments posted yet. Start the conversation!</p>`;
+                    return;
+                }
+
+                data.data.forEach(comment => {
+                    const dateStr = comment.created_at ? new Date(comment.created_at).toLocaleDateString() : 'Recent';
+                    const html = renderCommentMarkup(comment.author_name, comment.body, dateStr);
+                    wrapper.insertAdjacentHTML('beforeend', html);
+                });
+
+                nextCommentPageUrl = data.next_page_url;
+                const loadMoreBtn = document.getElementById('load-more-btn');
+                if (nextCommentPageUrl) {
+                    loadMoreBtn.classList.remove('hidden');
+                } else {
+                    loadMoreBtn.classList.add('hidden');
+                }
+            });
+    }
+
+
+    function submitComment(event) {
+        event.preventDefault();
+
+        const form = event.target;
+        const authorName = document.getElementById('author_name').value;
+        const body = document.getElementById('comment_body').value;
+
+        const authorError = document.getElementById('error-author_name');
+        const bodyError = document.getElementById('error-body');
+        authorError.classList.add('hidden');
+        bodyError.classList.add('hidden');
+
+        fetch(`/issues/${issueId}/comments`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfToken,
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({ author_name: authorName, body: body })
+        })
+            .then(async res => {
+                const data = await res.json();
+                if (!res.ok) throw data;
+
+                const zeroMsg = document.getElementById('no-comments-message');
+                if (zeroMsg) zeroMsg.remove();
+
+                const commentHtml = renderCommentMarkup(data.author_name, data.body, 'Just now');
+                document.getElementById('comments-wrapper').insertAdjacentHTML('afterbegin', commentHtml);
+
+                document.getElementById('comment-count').innerText = data.total_count;
+                form.reset();
+            })
+            .catch(err => {
+                if (err.errors) {
+                    if (err.errors.author_name) {
+                        authorError.innerText = err.errors.author_name[0];
+                        authorError.classList.remove('hidden');
+                    }
+                    if (err.errors.body) {
+                        bodyError.innerText = err.errors.body[0];
+                        bodyError.classList.remove('hidden');
+                    }
+                }
+            });
+    }
+
+    function renderCommentMarkup(author, body, time) {
+        return `
+            <div class="p-4 bg-gray-50 rounded-xl border border-gray-100 transition-all duration-200">
+                <div class="flex items-center justify-between mb-1">
+                    <span class="text-sm font-bold text-gray-800">${escapeHTML(author)}</span>
+                    <span class="text-xs text-gray-400">${time}</span>
+                </div>
+                <p class="text-sm text-gray-600 leading-relaxed whitespace-pre-line">${escapeHTML(body)}</p>
+            </div>`;
+    }
+
+    function escapeHTML(str) {
+        return str.replace(/[&<>'"]/g,
+            tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
+        );
+    }
 
 
     function attachTag(selectElement) {
@@ -175,7 +289,6 @@
             });
     }
 
-
     function detachTag(tagId) {
         const errorDiv = document.getElementById('tag-error');
         errorDiv.classList.add('hidden');
@@ -208,6 +321,4 @@
                 errorDiv.classList.remove('hidden');
             });
     }
-
-    function submitComment(e) { e.preventDefault(); }
 </script>
