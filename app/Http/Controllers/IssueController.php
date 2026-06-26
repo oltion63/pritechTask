@@ -6,6 +6,7 @@ use App\Http\Requests\StoreIssueRequest;
 use App\Models\Issue;
 use App\Models\Project;
 use App\Models\Tag;
+use App\Models\User;
 use Illuminate\Http\Request;
 
 class IssueController extends Controller
@@ -40,6 +41,7 @@ class IssueController extends Controller
     public function create()
     {
         $projects = Project::all();
+
         return view('issues.create', compact('projects'));
     }
 
@@ -59,16 +61,18 @@ class IssueController extends Controller
      */
     public function show(string $id)
     {
-        $issue = Issue::with(['tags', 'comments', 'project'])->findOrFail($id);
+        $issue = Issue::with(['tags', 'comments', 'project', 'assignees'])->findOrFail($id);
 
+        $allUsers = User::all();
         $allTags = Tag::all();
-        return view('issues.show', compact('issue', 'allTags'));
+
+        return view('issues.show', compact('issue', 'allTags', 'allUsers'));
     }
 
     public function attachTag(Request $request, Issue $issue)
     {
         $request->validate([
-            'tag_id' => 'required|exists:tags,id'
+            'tag_id' => 'required|exists:tags,id',
         ]);
 
         $issue->tags()->syncWithoutDetaching($request->tag_id);
@@ -90,6 +94,7 @@ class IssueController extends Controller
     {
         $issue = Issue::findOrFail($id);
         $projects = Project::all();
+
         return view('issues.edit', compact('issue', 'projects'));
     }
 
@@ -114,6 +119,39 @@ class IssueController extends Controller
     {
         $issue = Issue::findOrFail($id);
         $issue->delete();
+
         return redirect()->route('issues.index');
+    }
+
+    public function assignUser(Request $request, Issue $issue)
+    {
+        $request->validate(['user_id' => 'required|exists:users,id']);
+        $issue->assignees()->syncWithoutDetaching($request->user_id);
+
+        return response()->json(['success' => true]);
+    }
+
+    public function unassignUser(Issue $issue, User $user)
+    {
+        $issue->assignees()->detach($user->id);
+
+        return response()->json(['success' => true]);
+    }
+
+    public function search(Request $request)
+    {
+        $search = $request->get('query');
+
+        $issues = Issue::with(['project'])
+            ->when($search, function ($query, $search) {
+                return $query->where(function ($subQuery) use ($search) {
+                    $subQuery->where('title', 'LIKE', "%{$search}%")
+                        ->orWhere('description', 'LIKE', "%{$search}%");
+                });
+            })
+            ->limit(10)
+            ->get();
+
+        return response()->json($issues);
     }
 }

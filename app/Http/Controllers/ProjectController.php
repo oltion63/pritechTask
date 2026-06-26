@@ -4,7 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreProjectRequest;
 use App\Models\Project;
-use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
 
 class ProjectController extends Controller
 {
@@ -14,6 +15,7 @@ class ProjectController extends Controller
     public function index()
     {
         $projects = Project::with('issues')->get();
+
         return view('project.index', compact('projects'));
     }
 
@@ -31,6 +33,7 @@ class ProjectController extends Controller
     public function store(StoreProjectRequest $request)
     {
         $validated = $request->validated();
+        $validated['user_id'] = Auth::id();
         Project::create($validated);
 
         return redirect()->route('projects.index');
@@ -42,6 +45,7 @@ class ProjectController extends Controller
     public function show(string $id)
     {
         $project = Project::with('issues')->findOrFail($id);
+
         return view('project.show', compact('project'));
     }
 
@@ -51,6 +55,8 @@ class ProjectController extends Controller
     public function edit(string $id)
     {
         $project = Project::findOrFail($id);
+        Gate::authorize('update', $project);
+
         return view('project.edit', compact('project'));
     }
 
@@ -60,6 +66,9 @@ class ProjectController extends Controller
     public function update(StoreProjectRequest $request, string $id)
     {
         $project = Project::where('id', $id)->first();
+
+        Gate::authorize('update', $project);
+
         $validated = $request->validated();
 
         $project->update($validated);
@@ -74,7 +83,9 @@ class ProjectController extends Controller
     {
         $project = Project::findOrFail($id);
 
+        Gate::authorize('delete', $project);
         $project->delete();
+
         return redirect()->route('projects.index');
     }
 }
