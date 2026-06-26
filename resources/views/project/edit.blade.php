@@ -3,7 +3,7 @@
         <div class="max-w-2xl mx-auto bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
 
             <div class="mb-8">
-                <h2 class="text-2xl font-bold text-gray-900">Create New Project</h2>
+                <h2 class="text-2xl font-bold text-gray-900">Edit Project</h2>
             </div>
             <form id="delete-project-form" action="{{ route('projects.delete', $project->id) }}" method="post" class="hidden" >
                 @csrf
@@ -102,8 +102,6 @@
                             Edit Project
                         </button>
                     </div>
-
-
                 </div>
             </form>
 
