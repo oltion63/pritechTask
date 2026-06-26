@@ -59,8 +59,28 @@ class IssueController extends Controller
      */
     public function show(string $id)
     {
-        $issue = Issue::findOrFail($id);
-        return view('issues.show', compact('issue'));
+        $issue = Issue::with(['tags', 'comments', 'project'])->findOrFail($id);
+
+        $allTags = Tag::all();
+        return view('issues.show', compact('issue', 'allTags'));
+    }
+
+    public function attachTag(Request $request, Issue $issue)
+    {
+        $request->validate([
+            'tag_id' => 'required|exists:tags,id'
+        ]);
+
+        $issue->tags()->syncWithoutDetaching($request->tag_id);
+
+        return response()->json(['success' => true]);
+    }
+
+    public function detachTag(Issue $issue, Tag $tag)
+    {
+        $issue->tags()->detach($tag->id);
+
+        return response()->json(['success' => true]);
     }
 
     /**

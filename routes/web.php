@@ -36,4 +36,14 @@ Route::get('/issues/edit/{id}', [\App\Http\Controllers\IssueController::class, '
 Route::patch('/issues/update/{id}', [\App\Http\Controllers\IssueController::class, 'update'])->middleware('auth')->name('issues.update');
 Route::delete('/issues/delete/{id}', [\App\Http\Controllers\IssueController::class, 'destroy'])->middleware('auth')->name('issues.delete');
 
+
+//tags
+Route::get('/tags', [\App\Http\Controllers\TagController::class, 'index'])->name('tags.index');
+Route::get('/tags/create', [\App\Http\Controllers\TagController::class, 'create'])->name('tags.create');
+Route::post('/tags/store', [\App\Http\Controllers\TagController::class, 'store'])->middleware('auth')->name('tags.store');
+Route::delete('/tags/delete/{id}', [\App\Http\Controllers\TagController::class, 'destroy'])->middleware('auth')->name('tags.delete');
+Route::post('/issues/{issue}/tags', [\App\Http\Controllers\IssueController::class, 'attachTag'])->middleware('auth')->name('tags.attach');
+Route::delete('/issues/{issue}/tags/{tag}', [\App\Http\Controllers\IssueController::class, 'detachTag'])->middleware('auth')->name('tags.detach');
+
+
 require __DIR__.'/auth.php';

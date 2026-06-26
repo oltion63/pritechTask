@@ -26,7 +26,6 @@
                     @enderror
                 </div>
 
-                <!-- Description -->
                 <div>
                     <label for="description" class="block text-sm font-medium text-gray-700 mb-1">Description</label>
                     <textarea
@@ -41,9 +40,7 @@
                     @enderror
                 </div>
 
-                <!-- Dates Grid (Two Columns) -->
                 <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                    <!-- Start Date -->
                     <div>
                         <label for="start_date" class="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
                         <input
@@ -58,7 +55,6 @@
                         @enderror
                     </div>
 
-                    <!-- Deadline -->
                     <div>
                         <label for="deadline" class="block text-sm font-medium text-gray-700 mb-1">Deadline</label>
                         <input
