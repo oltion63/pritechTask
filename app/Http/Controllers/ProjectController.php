@@ -41,7 +41,7 @@ class ProjectController extends Controller
      */
     public function show(string $id)
     {
-        $project = Project::findOrFail($id);
+        $project = Project::with('issues')->findOrFail($id);
         return view('project.show', compact('project'));
     }
 

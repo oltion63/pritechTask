@@ -17,6 +17,7 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
+//projects
 Route::get('/projects', [\App\Http\Controllers\ProjectController::class, 'index'])->name('projects.index');
 Route::get('/project/{id}', [\App\Http\Controllers\ProjectController::class, 'show'])->middleware('auth')->name('projects.show');
 Route::get('/projects/create', [\App\Http\Controllers\ProjectController::class, 'create'])->name('projects.create');
@@ -24,5 +25,15 @@ Route::post('/projects/store', [\App\Http\Controllers\ProjectController::class, 
 Route::get('/project/edit/{id}', [\App\Http\Controllers\ProjectController::class, 'edit'])->middleware('auth')->name('projects.edit');
 Route::patch('/projects/update/{id}', [\App\Http\Controllers\ProjectController::class, 'update'])->middleware('auth')->name('projects.update');
 Route::delete('/projects/delete/{id}', [\App\Http\Controllers\ProjectController::class, 'destroy'])->middleware('auth')->name('projects.delete');
+
+
+//issues
+Route::get('/issues', [\App\Http\Controllers\IssueController::class, 'index'])->name('issues.index');
+Route::get('/issues/create', [\App\Http\Controllers\IssueController::class, 'create'])->name('issues.create');
+Route::post('/issues/store', [\App\Http\Controllers\IssueController::class, 'store'])->middleware('auth')->name('issues.store');
+Route::get('/issues/{id}', [\App\Http\Controllers\IssueController::class, 'show'])->middleware('auth')->name('issues.show');
+Route::get('/issues/edit/{id}', [\App\Http\Controllers\IssueController::class, 'edit'])->middleware('auth')->name('issues.edit');
+Route::patch('/issues/update/{id}', [\App\Http\Controllers\IssueController::class, 'update'])->middleware('auth')->name('issues.update');
+Route::delete('/issues/delete/{id}', [\App\Http\Controllers\IssueController::class, 'destroy'])->middleware('auth')->name('issues.delete');
 
 require __DIR__.'/auth.php';

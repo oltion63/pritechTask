@@ -1,7 +1,7 @@
 <x-app-layout>
     <div class="grid grid-cols-1 gap-6 mb-4 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 px-4 sm:px-6 lg:px-8 mt-20 justify-items-center w-full">
         @foreach($projects as $project)
-            <div class="ride-card w-full max-w-sm rounded-2xl border border-gray-100 bg-white p-5 shadow-sm transition-all duration-200 hover:shadow-md relative flex flex-col justify-between h-48">
+            <div class="ride-card w-full max-w-sm rounded-2xl border border-gray-100 bg-white p-5 shadow-sm transition-all duration-200 hover:shadow-md relative flex flex-col justify-between min-h-48">
 
                 <div>
                     <div class="flex items-center justify-between mb-2">
