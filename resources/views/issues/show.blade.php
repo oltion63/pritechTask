@@ -58,6 +58,36 @@
                 </div>
 
                 <div class="mt-8 pt-6 border-t border-gray-100">
+                    <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider mb-3">Assigned Members</h3>
+
+                    <div id="assignee-error" class="hidden mb-3 text-xs bg-red-50 text-red-600 px-3 py-2 rounded-xl border border-red-100"></div>
+
+                    <div id="issue-assignees-container" class="flex flex-wrap gap-2 items-center">
+                        @forelse($issue->assignees as $user)
+                            <span id="assignee-pill-{{ $user->id }}" class="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 bg-slate-100 text-slate-700 rounded-lg border border-slate-200 transition-all">
+                                <div class="h-2 w-2 rounded-full bg-slate-400"></div>
+                                {{ $user->name }}
+                                <button type="button" class="hover:text-red-600 font-bold ml-1 text-sm text-slate-400 transition-colors" onclick="unassignUser({{ $user->id }})">×</button>
+                            </span>
+                        @empty
+                            <p id="no-assignees-message" class="text-sm text-gray-400 italic">No team members assigned to this issue.</p>
+                        @endforelse
+
+                        <div class="ml-2">
+                            <select id="assignee-selector" onchange="assignUser(this)" class="text-xs rounded-lg border-gray-300 bg-white py-1 pl-2 pr-8 focus:ring-indigo-500 focus:border-indigo-500">
+                                <option value="" selected disabled>+ Assign Member</option>
+                                @foreach($allUsers as $user)
+                                    <option id="assignee-option-{{ $user->id }}" value="{{ $user->id }}" class="{{ $issue->assignees->contains($user->id) ? 'hidden' : '' }}">
+                                        {{ $user->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tags Section -->
+                <div class="mt-6 pt-6 border-t border-gray-100">
                     <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider mb-3">Tags</h3>
 
                     <div id="tag-error" class="hidden mb-3 text-xs bg-red-50 text-red-600 px-3 py-2 rounded-xl border border-red-100"></div>
@@ -242,6 +272,82 @@
         );
     }
 
+    function assignUser(selectElement) {
+        const userId = selectElement.value;
+        const selectedOption = selectElement.options[selectElement.selectedIndex];
+        const userName = selectedOption.text;
+        const errorDiv = document.getElementById('assignee-error');
+
+        if (!userId) return;
+
+        errorDiv.classList.add('hidden');
+
+        fetch(`/issues/${issueId}/assign`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfToken,
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({ user_id: userId })
+        })
+            .then(async res => {
+                const data = await res.json();
+                if (!res.ok) throw data;
+
+                const noAssigneesMsg = document.getElementById('no-assignees-message');
+                if (noAssigneesMsg) noAssigneesMsg.remove();
+
+                const assigneeHtml = `
+            <span id="assignee-pill-${userId}" class="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 bg-slate-100 text-slate-700 rounded-lg border border-slate-200 transition-all">
+                <div class="h-2 w-2 rounded-full bg-slate-400"></div>
+                ${userName}
+                <button type="button" class="hover:text-red-600 font-bold ml-1 text-sm text-slate-400 transition-colors" onclick="unassignUser(${userId})">×</button>
+            </span>`;
+
+                selectElement.parentNode.insertAdjacentHTML('beforebegin', assigneeHtml);
+                document.getElementById(`assignee-option-${userId}`).classList.add('hidden');
+                selectElement.value = "";
+            })
+            .catch(err => {
+                errorDiv.innerText = err.message || 'Failed to assign user.';
+                errorDiv.classList.remove('hidden');
+                selectElement.value = "";
+            });
+    }
+
+    function unassignUser(userId) {
+        const errorDiv = document.getElementById('assignee-error');
+        errorDiv.classList.add('hidden');
+
+        fetch(`/issues/${issueId}/assign/${userId}`, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRF-TOKEN': csrfToken,
+                'Accept': 'application/json'
+            }
+        })
+            .then(async res => {
+                if (!res.ok) {
+                    const data = await res.json();
+                    throw data;
+                }
+
+                document.getElementById(`assignee-pill-${userId}`).remove();
+
+                const option = document.getElementById(`assignee-option-${userId}`);
+                if (option) option.classList.remove('hidden');
+
+                const assigneesContainer = document.getElementById('issue-assignees-container');
+                if (assigneesContainer.querySelectorAll('span[id^="assignee-pill-"]').length === 0) {
+                    assigneesContainer.insertAdjacentHTML('afterbegin', '<p id="no-assignees-message" class="text-sm text-gray-400 italic">No team members assigned to this issue.</p>');
+                }
+            })
+            .catch(err => {
+                errorDiv.innerText = err.message || 'Failed to remove user.';
+                errorDiv.classList.remove('hidden');
+            });
+    }
 
     function attachTag(selectElement) {
         const tagId = selectElement.value;

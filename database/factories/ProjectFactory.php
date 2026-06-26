@@ -22,6 +22,7 @@ class ProjectFactory extends Factory
             'description' => fake()->paragraph(),
             'start_date' => fake()->date(),
             'deadline' => fake()->date(),
+            'user_id' => rand(1, 10),
         ];
     }
 }
